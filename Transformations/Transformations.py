@@ -31,7 +31,7 @@ def compute_transformation_chain(theta, p, rotation_axes=None):
     :param: p: [mx3] array of positions representing the joint position with respect to its parent. Ordering must be
     the same as theta.
     :param rotation_axes: optional, array of rotation axis. Can be 'x', 'y' or 'z'. Future implementations will also
-    allow a list [x, y, z] for arbitrary joint axes. Ordering must be the same as theta.
+    allow an array [x, y, z] for arbitrary joint axes. Ordering must be the same as theta.
     :return:
     """
     if rotation_axes is None:
