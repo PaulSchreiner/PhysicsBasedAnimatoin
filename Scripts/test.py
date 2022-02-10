@@ -1,4 +1,4 @@
-from InverseKinematics import pseudo_inverse_solver
+from IK.InverseKinematics import pseudo_inverse_solver
 import numpy as np
 
 

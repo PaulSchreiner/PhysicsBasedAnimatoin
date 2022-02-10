@@ -6,8 +6,8 @@ This file contains computational methods for obtaining the Jacobian for differen
 import numpy as np
 
 # from Rotations import rotation_matrix, forward_chain_rotations, backward_chain_rotations, compute_rotation_chain
-from Rotations import rotation_matrix
-from Transformations import forward_chain_transformation, backward_chain_transformation, compute_transformation_chain, \
+from Transformations.Rotations import rotation_matrix
+from Transformations.Transformations import forward_chain_transformation, backward_chain_transformation, compute_transformation_chain, \
     compose_T, t_matrix_inverse
 
 

@@ -3,7 +3,7 @@ This file contains an inverse kinematics solver library
 """
 import numpy as np
 
-from Jacobian import compute_jacobian_revolute_chain, compute_jacobian_inverse
+from IK.Jacobian import compute_jacobian_revolute_chain, compute_jacobian_inverse
 
 
 def pseudo_inverse_solver(target, p0, theta0=None, end_eff=None, tol=1.0e-4, max_iter=10, rotation_axes=None, lr=1.):
