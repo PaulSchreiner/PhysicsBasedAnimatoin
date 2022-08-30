@@ -5,11 +5,12 @@ import pygame
 
 class PhysicsObject:
 
-    def __init__(self, pos, vel, col, rad):
+    def __init__(self, pos, vel, col, rad, enable_phyics=True):
         self.position = np.array(pos, dtype=float)
         self.velocity = np.array(vel, dtype=float)
         self.colour = col
         self.radius = rad
+        self.no_physics = not enable_phyics
 
     def draw(self, screen):
         pygame.draw.circle(surface=screen,

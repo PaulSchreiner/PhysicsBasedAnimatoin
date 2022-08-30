@@ -1,7 +1,7 @@
 from physicsObject import PhysicsObject
 import pygame
 from scene import Scene
-import lemkelcp as lcp
+import lemkelcp.lemkelcp as lcp
 import numpy as np
 
 BLUE = (0, 0, 255)
@@ -23,10 +23,13 @@ def main():
     obj1 = PhysicsObject(pos=[200, 400], vel=[3, 0], col=BLUE, rad=50)
     obj2 = PhysicsObject(pos=[400, 400], vel=[-3, 0], col=GREEN, rad=60)
     obj3 = PhysicsObject(pos=[300, 300], vel=[0, 4], col=RED, rad=50)
+    ground_radius = 300000
+    obj4 = PhysicsObject(pos=[400, ground_radius + 700], vel=[0, 0], col=RED, rad=ground_radius, enable_phyics=False)
 
-    scene.addObject(obj1)
-    scene.addObject(obj2)
+    # scene.addObject(obj1)
+    # scene.addObject(obj2)
     scene.addObject(obj3)
+    scene.addObject(obj4)
 
     while running:
         screen.fill(background_colour)
@@ -55,8 +58,10 @@ def main():
             l, exit_code, exit_string = lcp.lemkelcp(M, phi)
             obj1, obj2 = c.objs
 
-            obj1.velocity += -c.normal * l
-            obj2.velocity += c.normal * l
+            if not obj1.no_physics:
+                obj1.velocity += -c.normal * l
+            if not obj2.no_physics:
+                obj2.velocity += c.normal * l
 
         # scene.applyContacts()
 

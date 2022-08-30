@@ -16,8 +16,9 @@ class Scene:
 
     def integrate(self):
         for obj in self.objects:
-            obj.velocity += self.acceleration * self.delta_time
-            obj.position += obj.velocity * self.delta_time
+            if not obj.no_physics:
+                obj.velocity += self.acceleration * self.delta_time
+                obj.position += obj.velocity * self.delta_time
 
     def reset(self):
         print("Resetting")
