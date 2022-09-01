@@ -2,6 +2,7 @@ from physicsObject import PhysicsObject
 import pygame
 from scene import Scene
 import lemkelcp.lemkelcp as lcp
+from LCPsolvers import incremental_pivoting
 import numpy as np
 
 BLUE = (0, 0, 255)
@@ -56,6 +57,9 @@ def main():
             # print("phi", phi)
 
             l, exit_code, exit_string = lcp.lemkelcp(M, phi)
+            l_test = incremental_pivoting(M, phi)
+            print("Validation lcp solution: l = {}".format(l))
+            print("Experimental lcp solution: l = {}".format(l_test))
             obj1, obj2 = c.objs
 
             if not obj1.no_physics:
