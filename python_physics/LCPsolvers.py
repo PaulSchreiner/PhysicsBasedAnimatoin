@@ -22,6 +22,8 @@ def compute_alpha(vj, delta_vj, F, x, delta_xf, L, v, delta_vl):
     xf = x[F]
     vl = v[L]
 
+    if abs(delta_vj) < 1e-5:
+        delta_vj = 0.0
     aj = -vj/delta_vj
     af = np.inf
     al = np.inf
@@ -31,27 +33,25 @@ def compute_alpha(vj, delta_vj, F, x, delta_xf, L, v, delta_vl):
 
     for xi, delta_xi, f in zip(xf, delta_xf, F):
         if delta_xi < 0:
-            alphas[1] = np.min([alphas[1], -xi/delta_xi])
+            alphas[1] = np.min([alphas[1], (-xi/delta_xi).squeeze()])
             ind_f = f
 
     for vi, delta_vi, l in zip(vl, delta_vl, L):
         if delta_vi < 0:
-            alphas[2] = np.min([alphas[2], -vi/delta_vi])
+            alphas[2] = np.min([alphas[2], (-vi/delta_vi).squeeze()])
             ind_l = l
 
     a_out = np.min(alphas)
     indices = [-1, ind_f, ind_l]
     ind_block = indices[alphas.index(a_out)]
 
-    return a_out.squeeze(), ind_block
+    return a_out, ind_block
 
 
-def find_j(v, P):
-    for j in P:
-        if v[j] < 0:
-            return j
-
-    return -1
+def find_j(v: np.ndarray, P: list):
+    if not P or np.min(v[P]) >= 0:
+        return -1
+    return P[int(np.where(v[P]==np.min(v[P]))[0][0])]
 
 
 class IncrementalPivoting(object):
@@ -82,12 +82,12 @@ class IncrementalPivoting(object):
                 Ajj = self.A[j, j]
 
                 delta_xf = np.linalg.solve(Aff, -Afj)
-                if delta_xf.shape[0] > 0:
-                    delta_vl = Afl_T @ delta_xf + Alj
-                    delta_vj = Afj_T @ delta_xf + Ajj
-                else:
-                    delta_vl = Alj
-                    delta_vj = Ajj
+                # if delta_xf.shape[0] > 0:
+                delta_vl = Afl_T @ delta_xf + Alj
+                delta_vj = (Afj_T @ delta_xf + Ajj).squeeze()
+                # else:
+                #     delta_vl = Alj
+                #     delta_vj = Ajj
 
                 alpha, ll = compute_alpha(self.v[j],
                                           delta_vj,
@@ -102,7 +102,7 @@ class IncrementalPivoting(object):
                     self.x[self.F] += alpha * delta_xf.squeeze()
                 if delta_vl.shape[0] > 0:
                     self.v[self.L] += alpha * delta_vl.squeeze()
-                lambda_j = alpha
+                self.x[j] = alpha
 
                 if ll < 0:
                     ll = j

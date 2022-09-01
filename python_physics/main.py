@@ -1,3 +1,5 @@
+import time
+
 from physicsObject import PhysicsObject
 import pygame
 from scene import Scene
@@ -27,8 +29,8 @@ def main():
     ground_radius = 300000
     obj4 = PhysicsObject(pos=[400, ground_radius + 700], vel=[0, 0], col=RED, rad=ground_radius, enable_phyics=False)
 
-    # scene.addObject(obj1)
-    # scene.addObject(obj2)
+    scene.addObject(obj1)
+    scene.addObject(obj2)
     scene.addObject(obj3)
     scene.addObject(obj4)
 
@@ -51,20 +53,26 @@ def main():
         # go through each collision and fix it!
         # we know so far there's two methods 1. Constraint 2. Impulse based.
         for c in collisions:
+            obj1, obj2 = c.objs
+
             M = np.eye(2)
+
             phi = c.distance + scene.delta_time * c.contact_vel
 
             # print("phi", phi)
 
             ######################## Implement LCP solver here ##############################
-            l, exit_code, exit_string = lcp.lemkelcp(M, phi)
-            l_test = incremental_pivoting(M, phi)
-            print("Validation lcp solution: l = {}".format(l))
-            print("Experimental lcp solution: l = {}".format(l_test))
+            # t0 = time.time()
+            # l, exit_code, exit_string = lcp.lemkelcp(M, phi)
+            # t1 = time.time()
+            l = incremental_pivoting(M, phi)
+            # t2 = time.time()
+            # print("lemke time: {}".format(t1-t0))
+            # print("our time: {}".format(t2-t1))
+            # print("Validation lcp solution: l = {}".format(l))
+            # print("Experimental lcp solution: l = {}".format(l_test))
 
             ######################## Implement LCP solver here ##############################
-
-            obj1, obj2 = c.objs
 
             if not obj1.no_physics:
                 obj1.velocity += -c.normal * l
