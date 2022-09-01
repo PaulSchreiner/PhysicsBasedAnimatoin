@@ -56,10 +56,14 @@ def main():
 
             # print("phi", phi)
 
+            ######################## Implement LCP solver here ##############################
             l, exit_code, exit_string = lcp.lemkelcp(M, phi)
             l_test = incremental_pivoting(M, phi)
             print("Validation lcp solution: l = {}".format(l))
             print("Experimental lcp solution: l = {}".format(l_test))
+
+            ######################## Implement LCP solver here ##############################
+
             obj1, obj2 = c.objs
 
             if not obj1.no_physics:
