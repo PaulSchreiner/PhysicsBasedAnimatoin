@@ -1,10 +1,12 @@
 import numpy as np
 
 
-def incremental_pivoting(A, b):
-    ip = IncrementalPivoting(A, b)
-    ip.solve()
-    return ip.x
+def pivoting_methods(A, b, method="default"):
+    solver = IncrementalPivoting(A, b) # Default
+    if method == "principal":
+        solver =  PrincipalPivoting(A, b)
+    solver.solve()
+    return solver.x
 
 
 def get_block(A, II, JJ):
@@ -65,6 +67,7 @@ class IncrementalPivoting(object):
         self.v = np.copy(b)
 
     def solve(self):
+        print("Incremantal Solver")
         condition1 = True
 
         while condition1:
@@ -117,3 +120,49 @@ class IncrementalPivoting(object):
 
                 if ll == j:
                     break
+
+class PrincipalPivoting(object):
+    def __init__(self, A, b):
+        self.A = np.copy(A)
+        self.b = np.copy(b)
+        self.F = list(np.arange(np.shape(A)[0]))
+
+        self.L = []
+        self.U = []
+        self.x = np.zeros_like(self.b)
+        self.v = np.copy(b)
+        self.lh = np.inf
+        self.ll = 0
+        self.N = 10
+
+    def solve(self):
+        print("Principal Solver")
+        for _ in range(3):
+            Aff = get_block(self.A, self.F, self.F)
+            Afl = get_block(self.A, self.F, self.L)
+            AfU = get_block(self.A, self.F, self.U)
+            bf  = self.b[self.F]
+            xl  = self.x[self.L]
+            xu  = self.x[self.U]
+
+            self.x[self.F] = np.linalg.solve(Aff, -bf - Afl @ xl - AfU @ xu)
+            self.v = self.A @ self.x + self.b
+
+            for i in range(len(self.x)):
+                if i in self.F:
+                    if self.x[i] < self.ll:
+                        self.F.pop(self.F.index(i))
+                        self.L.append(i)
+                    elif self.x[i] > self.lh:
+                        self.F.pop(self.F.index(i))
+                        self.U.append(i)
+                elif i in self.U and self.v[i] >= 0:
+                    self.U.pop(self.U.index(i))
+                    self.F.append(i)
+                elif i in self.L and self.v[i] <= 0:
+                    self.L.pop(self.L.index(i))
+                    self.F.append(i)
+
+
+        # if delta_xf.shape[0] > 0:
+

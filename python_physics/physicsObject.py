@@ -13,9 +13,10 @@ class PhysicsObject:
         self.no_physics = not enable_phyics
 
     def draw(self, screen):
-        pygame.draw.circle(surface=screen,
-            color=self.colour, center=self.position,
-            radius=self.radius)
+        pygame.draw.circle(screen,
+                           self.colour,
+                           [int(f) for f in self.position],
+                           self.radius)
 
     def intersect(self, otherObj):
         radiusSum = self.radius + otherObj.radius
