@@ -60,9 +60,9 @@ class Splitting(ABC):
     
     def __init__(self, A, b, num_iters=10):
         self.A = A
-        self.b = b
+        self.b = b.reshape(-1,1)
         self.num_iters = num_iters
-        self.x = np.array([0., 0.]).reshape(2,1)
+        self.x = np.zeros_like(self.b)
         self.solve()
 
     @abstractproperty
@@ -77,7 +77,7 @@ class Splitting(ABC):
         o = np.zeros_like(self.x)
         for _ in range(self.num_iters):
             z = np.linalg.inv(self.M)@(self.N@self.x+self.b)
-            self.x = np.maximum(self.x, o)
+            self.x = np.maximum(z, o)
 
 class Jacobi(Splitting):
 
