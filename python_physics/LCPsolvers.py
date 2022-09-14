@@ -1,5 +1,6 @@
 import numpy as np
-
+from abc import ABC, abstractproperty
+from functools import cached_property
 
 def pivoting_methods(A, b, method="default"):
     solver = IncrementalPivoting(A, b) # Default
@@ -54,6 +55,41 @@ def find_j(v: np.ndarray, P: list):
     if not P or np.min(v[P]) >= 0:
         return -1
     return P[int(np.where(v[P]==np.min(v[P]))[0][0])]
+
+class Splitting(ABC):
+    
+    def __init__(self, A, b, num_iters=10):
+        self.A = A
+        self.b = b
+        self.num_iters = num_iters
+        self.x = np.array([0., 0.]).reshape(2,1)
+        self.solve()
+
+    @abstractproperty
+    def M(self):
+        pass
+    
+    @cached_property
+    def N(self):
+        return self.M - self.A    
+
+    def solve(self):
+        o = np.zeros_like(self.x)
+        for _ in range(self.num_iters):
+            z = np.linalg.inv(self.M)@(self.N@self.x+self.b)
+            self.x = np.maximum(self.x, o)
+
+class Jacobi(Splitting):
+
+    @cached_property
+    def M(self):
+        return np.diag(np.diag(self.A))
+
+class PGS(Splitting):
+
+    @cached_property
+    def M(self):
+        return np.tril(self.A, k=0)
 
 
 class IncrementalPivoting(object):
@@ -138,6 +174,7 @@ class PrincipalPivoting(object):
     def solve(self):
         print("Principal Solver")
         for _ in range(3):
+            print(self.A)
             Aff = get_block(self.A, self.F, self.F)
             Afl = get_block(self.A, self.F, self.L)
             AfU = get_block(self.A, self.F, self.U)

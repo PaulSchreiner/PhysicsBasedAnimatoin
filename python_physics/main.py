@@ -4,7 +4,7 @@ from physicsObject import PhysicsObject
 import pygame
 from scene import Scene
 #import lemkelcp.lemkelcp as lcp
-from LCPsolvers import pivoting_methods
+from LCPsolvers import pivoting_methods, Jacobi, PGS
 import numpy as np
 
 BLUE = (0, 0, 255)
@@ -51,7 +51,7 @@ def main():
                         # print("Collision!!")
 
         # go through each collision and fix it!
-        # we know so far there's two methods 1. Constraint 2. Impulse based.
+        # we know so far there's two methods 1. Constraint 2. Impulse based.'
         for c in collisions:
             obj1, obj2 = c.objs
 
@@ -64,7 +64,8 @@ def main():
     #         # l, exit_code, exit_string = lcp.lemkelcp(M, phi)
     #         # t1 = time.time()
             #print("Hello world")
-            l = pivoting_methods(M, phi, method = "principal")
+            # l = pivoting_methods(M, phi, method = "principal")
+            l = PGS(M, -phi).x.reshape(-1)
             #print("l", l)
             #print(M @ l + phi)
     #         # t2 = time.time()
