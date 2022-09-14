@@ -65,7 +65,7 @@ def main():
     #         # t1 = time.time()
             #print("Hello world")
             # l = pivoting_methods(M, phi, method = "principal")
-            l = PGS(M, -phi).x.reshape(-1)
+            l = PGS(M, phi).x.reshape(-1)
             #print("l", l)
             #print(M @ l + phi)
     #         # t2 = time.time()
