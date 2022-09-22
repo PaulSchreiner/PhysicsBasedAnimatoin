@@ -18,15 +18,32 @@ class PhysicsObject:
                            [int(f) for f in self.position],
                            self.radius)
 
-    def intersect(self, otherObj):
-        radiusSum = self.radius + otherObj.radius
-        centerDistance = np.linalg.norm(otherObj.position - self.position)
+    def intersect(self, other_obj):
+        radius_sum = self.radius + other_obj.radius
+        center_distance = np.linalg.norm(other_obj.position - self.position)
 
-        # everything points to otherObj
-        normal = (otherObj.position - self.position) / centerDistance
-        contact_vel = np.dot(otherObj.velocity - self.velocity, normal) * normal
+        # everything points to other_obj
+        normal = (other_obj.position - self.position) / center_distance
+        contact_vel = np.dot(other_obj.velocity - self.velocity, normal) * normal
 
-        return IntersectData(obj1=self, obj2=otherObj,
-                intersect=centerDistance < radiusSum,
-                dist=centerDistance - radiusSum, normal=normal,
-                contact_vel=contact_vel)
+        # jac = np.array([[-normal[0], 0, normal[0], 0],
+        #                 [0, -normal[1], 0, normal[1]]])
+
+        jac = np.array([-normal[0], -normal[1], normal[0], normal[1]])  # row
+        jac2 = np.array([normal[0], normal[1], -normal[0], -normal[1]])
+        diff = np.array([self.velocity[0], self.velocity[1],
+                other_obj.velocity[0], other_obj.velocity[1]])  # column
+
+        contact_vel2 = np.matmul(jac, diff) * normal
+        print("dot prod: ", np.dot(other_obj.velocity - self.velocity, normal))
+        print("normal:", normal)
+        print("jacobian:", np.matmul(jac, diff))
+        print("contact_vel", contact_vel)
+        print("contact_vel2", contact_vel2)
+        print("##########")
+
+        test = np.matmul(jac, diff)
+        return IntersectData(obj1=self, obj2=other_obj,
+                intersect=center_distance < radius_sum,
+                dist=center_distance - radius_sum, normal=normal,
+                contact_vel=contact_vel2, jac=jac, jac2=jac2)
