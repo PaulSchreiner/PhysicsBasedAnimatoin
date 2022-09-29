@@ -1,6 +1,6 @@
 import numpy as np
 from abc import ABC, abstractproperty
-from functools import cached_property
+# from functools import cached_property
 
 def pivoting_methods(A, b, method="default"):
     solver = IncrementalPivoting(A, b) # Default
@@ -64,12 +64,13 @@ class Splitting(ABC):
         self.num_iters = num_iters
         self.x = np.zeros_like(self.b)
         self.solve()
+        self.M
 
     @abstractproperty
     def M(self):
         pass
     
-    @cached_property
+    @property
     def N(self):
         return self.M - self.A    
 
@@ -81,13 +82,13 @@ class Splitting(ABC):
 
 class Jacobi(Splitting):
 
-    @cached_property
+    @property
     def M(self):
         return np.diag(np.diag(self.A))
 
 class PGS(Splitting):
 
-    @cached_property
+    @property
     def M(self):
         return np.tril(self.A, k=0)
 

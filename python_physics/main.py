@@ -1,10 +1,10 @@
 import time
 
-from physicsObject import PhysicsObject
+from physicsObject import PhysicsObject, Circle, Box
 import pygame
 from scene import Scene
-#import lemkelcp.lemkelcp as lcp
-from LCPsolvers import pivoting_methods
+import lemkelcp as lcp
+from LCPsolvers import pivoting_methods, Jacobi, PGS
 import numpy as np
 
 BLUE = (0, 0, 255)
@@ -23,11 +23,11 @@ def main():
 
     scene = Scene(dt=0.1, acceleration=[0, 0.9])
 
-    obj1 = PhysicsObject(pos=[200, 400], vel=[3, 0], col=BLUE, rad=50)
-    obj2 = PhysicsObject(pos=[400, 400], vel=[-3, 0], col=GREEN, rad=60)
-    obj3 = PhysicsObject(pos=[300, 300], vel=[0, 4], col=RED, rad=50)
+    obj1 = Circle(pos=[200, 400], idx=0, vel=[3, 0], col=BLUE, rad=50)
+    obj2 = Circle(pos=[400, 400], idx=1, vel=[-3, 0], col=GREEN, rad=60)
+    obj3 = Circle(pos=[300, 300], idx=2, vel=[0, 4], col=RED, rad=50)
     ground_radius = 300000
-    obj4 = PhysicsObject(pos=[400, ground_radius + 700], vel=[0, 0], col=RED,
+    obj4 = Circle(pos=[400, ground_radius + 700], idx=3, vel=[0, 0], col=RED,
         rad=ground_radius, enable_phyics=False)
 
     scene.addObject(obj1)
@@ -43,11 +43,14 @@ def main():
 
         # collision detection
         collisions = []
+        added = []
         for obj_idx in range(len(scene.objects)):
             for obj_idx2 in range(len(scene.objects)):
-                if obj_idx != obj_idx2:
+                if obj_idx != obj_idx2 and ((obj_idx2, obj_idx) not in added):
+                    added.append((obj_idx, obj_idx2))
                     test = scene.objects[obj_idx].intersect(scene.objects[obj_idx2])
                     if test.doesIntersect:
+                        # save indices
                         collisions.append(test)
 
         '''
@@ -61,19 +64,39 @@ def main():
         rotational velocities.
         '''
 
+        print("added", added)
         print("collisions", collisions)
+
+        dim = 8
+        M = np.eye(dim)
+        print(M)
+        #J = np.zeros(6)  # num_objs * 2
+        J = []
+        indices = []
+        phi = []
+        # phi = num_contacts * 2 (non zero J)
+
+        u = np.zeros(dim)
+        grav = np.zeros(dim)
+        grav[1] = 0.9
+        grav[3] = 0.9
+        grav[5] = 0.9
+        grav[7] = 0.9
+
         # go through each collision and fix it!
         for c in collisions:
             obj1, obj2 = c.objs
-
-            M = np.eye(2)  # this is indeed the mass matrix
-            phi = c.distance + scene.delta_time * c.contact_vel
+            indices.append((obj1.idx, obj2.idx, c.normal))
+            # this is indeed the mass matrix
+            # phi_tmp = c.distance + scene.delta_time * c.contact_vel
+            # phi.append(phi_tmp[0])
+            # phi.append(phi_tmp[1])
 
             # The c.contact_vel = J * u can be written as a matrix-vector product
             # J = [-c.normal^T c.normal^T]
-            # u = [obj1.vel obj2.vel]
+            # u = [obj1.vel obj2.vel]   (page 17)
 
-            # [M -J^T   * [u, l]  + [-Mu - hf, 0] = 0
+            # [M -J^T   * [u, l]  + [-Mu - hf, 0] = 0   (page 28)
             #  J    0]
 
             # [J M^-1 J^T] * l + J * M^-1 (Mu + hf) = 0
@@ -86,35 +109,59 @@ def main():
             # and robustness
 
             # 0 <= phi compl. l >= 0
-            # 0 <= (phi + h * contact_v) compl. l >= 0
+            # 0 <= (phi + h * contact_v) compl. l >= 0 (page 16)
             # 0 <= Ax + b compl. x >= 0
             # where x are the impulses (it could be lambda for just contacts)
+            tmp_jac = np.zeros(dim)
 
-            A = np.transpose(c.jac) @ np.linalg.inv(M) @ c.jac
+            u[(obj1.idx * 2)] = -c.contact_vel[0]
+            u[(obj1.idx * 2) + 1] = -c.contact_vel[1]
+
+            u[(obj2.idx * 2)] = c.contact_vel[0]
+            u[(obj2.idx * 2) + 1] = c.contact_vel[1]
+
+            tmp_jac[(obj1.idx * 2)] = -c.normal[0]
+            tmp_jac[(obj1.idx * 2) + 1] = -c.normal[1]
+
+            tmp_jac[(obj2.idx * 2)] = c.normal[0]
+            tmp_jac[(obj2.idx * 2) + 1] = c.normal[1]
+
+            J.append(tmp_jac)  # a single row per contact.
+
+        if len(J) == 0:
+            l = 0
+        else:
+
+            J = np.array(J)
+
+            print("J", J)
+            print("J shape", J.shape)
+
+            A = J @ np.linalg.inv(M) @ np.transpose(J)
+
             print("A", A)
-            # F = np.arange(len(phi))
+            print("A shape", A.shape)
 
-            ######################## Implement LCP solver here ##############################
-            # t0 = time.time()
-            # l, exit_code, exit_string = lcp.lemkelcp(M, phi)
-            # t1 = time.time()
-            l = pivoting_methods(A, phi, method="principal")
-            # l = PGS(M, phi).x.reshape(-1)
+            b = J @ np.linalg.inv(M) @ (M @ u)
 
-            #print("l", l)
-            #print(M @ l + phi)
-            # t2 = time.time()
-            # print("lemke time: {}".format(t1-t0))
-            # print("our time: {}".format(t2-t1))
-            # print("Validation lcp solution: l = {}".format(l))
-            # print("Experimental lcp solution: l = {}".format(l_test))
+            # J => num_contactsxDOF DOFxDO DOFxnum_contacts
+            # A -> num_contactsxnum_contacts
 
-            ######################## Implement LCP solver here ##############################
+            # l = lcp.lemkelcp(A, b)
+            l = pivoting_methods(A, b, method="principal")
+            # l = Jacobi(A, b).x.reshape(-1)
+            # l = l[0]
+            print("lambda", l)
 
+        idx = 0
+        for obj1_idx, obj2_idx, normal in indices:
+            obj1 = scene.objects_dict[obj1_idx]
+            obj2 = scene.objects_dict[obj2_idx]
             if not obj1.no_physics:
-                obj1.velocity += -c.normal * l
+                obj1.velocity += -normal * l[idx]
             if not obj2.no_physics:
-                obj2.velocity += c.normal * l
+                obj2.velocity += normal * l[idx]
+            idx += 1
 
         for obj in scene.objects:
             obj.draw(screen)

@@ -7,12 +7,14 @@ class Scene:
     def __init__(self, dt, acceleration):
         self.initial_objs = []
         self.objects = []
+        self.objects_dict = {}
         self.delta_time = dt
         self.acceleration = np.array(acceleration)
 
     def addObject(self, obj):
         self.objects.append(obj)
         self.initial_objs.append(copy.deepcopy(obj))
+        self.objects_dict[obj.idx] = obj
 
     def integrate(self):
         for obj in self.objects:
@@ -23,3 +25,5 @@ class Scene:
     def reset(self):
         print("Resetting")
         self.objects = copy.deepcopy(self.initial_objs)
+        for o in self.objects:
+            self.objects_dict[o.idx] = o
